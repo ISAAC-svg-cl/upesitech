@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../auth';
 
 const LINKS: [string, string][] = [['/', 'Accueil'], ['/services', 'Services'], ['/devis', 'Devis'], ['/emplois', 'Emplois'], ['/contact', 'Contact']];
 
@@ -14,9 +15,12 @@ export function Logo() {
 
 export default function Layout() {
   const { pathname } = useLocation();
+  const { isLogged } = useAuth();
+
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [pathname]);
+
   return (
     <>
       <header>
@@ -38,7 +42,13 @@ export default function Layout() {
           <div className="fl">{LINKS.slice(1).map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}</div>
           <div className="fs"><span>Instagram @upesitech</span><span>Facebook @upesitech</span><span>LinkedIn @upesitech</span></div>
         </div>
-        <div className="fc">© {new Date().getFullYear()} UpesiTech SARL. Tous droits réservés.</div>
+        <div className="fc">
+          <span>© {new Date().getFullYear()} UpesiTech SARL. Tous droits réservés.</span>
+          {' · '}
+          <Link to={isLogged ? '/admin' : '/connexion'} style={{ color: 'inherit', opacity: 0.8 }}>
+            {isLogged ? 'Tableau de bord' : 'Connexion'}
+          </Link>
+        </div>
       </footer>
     </>
   );

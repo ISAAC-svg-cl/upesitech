@@ -6,6 +6,8 @@ import Quote from './pages/Quote';
 import Jobs from './pages/Jobs';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
+import Login from './pages/Login';
+import { RequireAuth } from './auth';
 
 export default function App() {
   return (
@@ -16,7 +18,15 @@ export default function App() {
         <Route path="devis" element={<Quote />} />
         <Route path="emplois" element={<Jobs />} />
         <Route path="contact" element={<Contact />} />
-        <Route path="admin" element={<Admin />} />
+        <Route path="connexion" element={<Login />} />
+        <Route
+          path="admin"
+          element={
+            <RequireAuth>
+              <Admin />
+            </RequireAuth>
+          }
+        />
         <Route path="*" element={<Home />} />
       </Route>
     </Routes>

@@ -4,27 +4,37 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import fs from 'node:fs';
 import path from 'node:path';
-import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { db } from './db.js';
 import { notify } from './mail.js';
 
-const { PORT = 4000, JWT_SECRET, ADMIN_PASSWORD, CLIENT_ORIGIN = 'http://localhost:5173' } = process.env;
-if (!JWT_SECRET || !ADMIN_PASSWORD) {
-  console.error('Définissez JWT_SECRET et ADMIN_PASSWORD dans backend/.env');
+const { PORT = 4000, JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, CLIENT_ORIGIN = 'http://localhost:5173' } = process.env;
+if (!JWT_SECRET || JWT_SECRET.length < 32 || !ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('Configuration requise : JWT_SECRET (au moins 32 caractères), ADMIN_EMAIL et ADMIN_PASSWORD dans backend/.env');
   process.exit(1);
 }
+
+// Hachage du mot de passe admin au démarrage ; on efface la variable brute de la mémoire
+const adminPasswordHash = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+delete process.env.ADMIN_PASSWORD;
+
+const ADMIN_EMAIL_NORMALIZED = ADMIN_EMAIL.trim().toLowerCase();
 
 const SERVICE_IDS = ['web', 'mob', 'auto', 'cyb', 'for', 'des', 'imp'];
 const STATUSES = ['nouveau', 'en cours', 'traité'];
 const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
-const same = (a, b) => { const x = Buffer.from(a), y = Buffer.from(b); return x.length === y.length && timingSafeEqual(x, y); };
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res)).catch(next);
 const auth = (req, res, next) => {
-  try { jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), JWT_SECRET); next(); }
-  catch { res.status(401).json({ error: 'Connexion requise.' }); }
+  try {
+    const payload = jwt.verify((req.headers.authorization || '').replace('Bearer ', ''), JWT_SECRET);
+    req.user = payload;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Connexion requise.' });
+  }
 };
 
 const app = express();
@@ -65,10 +75,19 @@ app.post('/api/applications', formLimit, wrap(async (req, res) => {
 }));
 
 // ---------- Admin ----------
-app.post('/api/admin/login', loginLimit, (req, res) => {
-  if (!same(str(req.body?.password, 200), ADMIN_PASSWORD)) return res.status(401).json({ error: 'Mot de passe incorrect.' });
-  res.json({ token: jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '8h' }) });
-});
+app.post('/api/admin/login', loginLimit, wrap(async (req, res) => {
+  const email = str(req.body?.email, 120).toLowerCase();
+  const password = typeof req.body?.password === 'string' ? req.body.password : '';
+  const emailOk = email.length > 0 && email === ADMIN_EMAIL_NORMALIZED;
+  const passwordOk = await bcrypt.compare(password, adminPasswordHash);
+  if (!emailOk || !passwordOk) {
+    return res.status(401).json({ error: 'E-mail ou mot de passe incorrect.' });
+  }
+  res.json({ token: jwt.sign({ role: 'admin', email: ADMIN_EMAIL_NORMALIZED }, JWT_SECRET, { expiresIn: '8h' }) });
+}));
+
+app.get('/api/admin/me', auth, (_req, res) => res.json({ ok: true, email: ADMIN_EMAIL_NORMALIZED }));
+
 app.get('/api/admin/quotes', auth, wrap(async (_req, res) => res.json(await db.all('quotes'))));
 app.patch('/api/admin/quotes/:id', auth, wrap(async (req, res) => {
   if (!STATUSES.includes(req.body?.status)) return res.status(400).json({ error: 'Statut invalide.' });
