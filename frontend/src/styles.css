@@ -151,4 +151,8 @@ nav a:hover{color:var(--text)}
 .tbl-wrap{overflow-x:auto}
 .tbl{width:100%;border-collapse:collapse;font-size:14px}
 .tbl th,.tbl td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
-@media(max-width:820px){nav a{padding:9px 10px;font-size:13px}}
+@media(max-width:820px){
+  header{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}
+  .brand{flex-shrink:0}
+  nav a{padding:9px 10px;font-size:13px}
+}

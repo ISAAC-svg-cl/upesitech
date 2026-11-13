@@ -1,9 +1,11 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build --prefix frontend",
+  "framework": "vite",
+  "installCommand": "npm install && cd frontend && npm install",
+  "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/dist",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index" }
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
     "api/index.js": {
@@ -11,3 +13,4 @@
     }
   }
 }
+
