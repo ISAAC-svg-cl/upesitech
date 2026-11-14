@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { api } from '../../api';
 import { SERVICES } from '../../data';
 import type { Quote, Status } from '../../types';
-import { exportToCsv } from './csv';
 import { exportQuotesListPdf } from './pdf';
 
 type Props = {
@@ -81,39 +80,6 @@ export default function QuotesTab({ quotes, onReload, onOpenQuote, onError }: Pr
   const totalPages = Math.max(1, Math.ceil(filteredQuotes.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pagedQuotes = filteredQuotes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  function handleExportCsv() {
-    const headers = [
-      'Référence',
-      'Date de création',
-      'Nom du client',
-      'Organisation',
-      'Contact',
-      'Délai souhaité',
-      'Services demandés',
-      'Statut',
-      'Archivé',
-      'Message / Projet',
-      'Notes internes',
-    ];
-
-    const rows = filteredQuotes.map((q) => [
-      q.ref,
-      fmt(q.createdAt),
-      q.name,
-      q.org || '',
-      q.contact,
-      q.deadline || '',
-      q.services.map(serviceName).join(', '),
-      q.status,
-      q.archived ? 'Oui' : 'Non',
-      q.message,
-      (q.notes || []).map((n) => `[${fmt(n.createdAt)}] ${n.text}`).join(' | '),
-    ]);
-
-    const dateStr = new Date().toISOString().slice(0, 10);
-    exportToCsv(`upesitech-devis-${dateStr}`, headers, rows);
-  }
 
   function handleExportPdf() {
     let subtitle = 'Tous les devis';
@@ -290,15 +256,6 @@ export default function QuotesTab({ quotes, onReload, onOpenQuote, onError }: Pr
               title="Télécharger la liste complète au format PDF"
             >
               📄 Exporter en PDF
-            </button>
-            <button
-              className="btn ghost"
-              onClick={handleExportCsv}
-              disabled={filteredQuotes.length === 0}
-              style={{ padding: '6px 14px', fontSize: 12 }}
-              title="Exporter au format tableur CSV"
-            >
-              📥 CSV
             </button>
           </div>
         </div>
