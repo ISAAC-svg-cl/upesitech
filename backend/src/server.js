@@ -294,7 +294,15 @@ app.patch('/api/admin/jobs/:id', auth, wrap(async (req, res) => {
     const d = str(req.body.deadline, 10);
     patch.deadline = d || null;
   }
-  const r = await db.update('jobs', req.params.id, patch);
+  let r = await db.update('jobs', req.params.id, patch);
+  // Secours : si non trouvé par ID direct, recherche par titre
+  if (!r && req.body?.title) {
+    const allJobs = await db.all('jobs');
+    const match = allJobs.find((j) => j.title.toLowerCase() === req.body.title.trim().toLowerCase());
+    if (match) {
+      r = await db.update('jobs', match.id, patch);
+    }
+  }
   r ? res.json(r) : res.status(404).json({ error: 'Introuvable.' });
 }));
 

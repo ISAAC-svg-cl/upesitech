@@ -13,6 +13,7 @@ type Props = {
 export default function JobsTab({ jobs, apps, onReload, onError }: Props) {
   const [nj, setNj] = useState({ title: '', category: '', mode: 'Temps plein', deadline: '' });
   const [busy, setBusy] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
 
   async function handleAddJob(e: FormEvent) {
@@ -39,11 +40,14 @@ export default function JobsTab({ jobs, apps, onReload, onError }: Props) {
   }
 
   async function handleToggleActive(j: Job) {
+    setTogglingId(j.id);
     try {
-      await api.updateJob(j.id, { active: j.active === false });
+      await api.updateJob(j.id, { active: j.active === false, title: j.title });
       onReload();
     } catch (x) {
       onError(x);
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -181,10 +185,11 @@ export default function JobsTab({ jobs, apps, onReload, onError }: Props) {
                     <div style={{ display: 'inline-flex', gap: 6 }}>
                       <button
                         className="btn ghost"
-                        style={{ padding: '5px 10px', fontSize: 12 }}
+                        style={{ padding: '5px 10px', fontSize: 12, opacity: togglingId === j.id ? 0.6 : 1 }}
+                        disabled={togglingId === j.id}
                         onClick={() => handleToggleActive(j)}
                       >
-                        {isActive ? 'Mettre en pause' : 'Réactiver'}
+                        {togglingId === j.id ? 'Mise à jour…' : (isActive ? 'Mettre en pause' : 'Réactiver')}
                       </button>
                       <button
                         className="btn ghost"

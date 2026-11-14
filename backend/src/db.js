@@ -6,23 +6,23 @@ import pg from 'pg';
 const { Pool } = pg;
 const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-// ── Données initiales (seed) ───────────────────────────────────────────────
-const defaultJob = (title, category, mode) => ({
-  id: randomUUID(),
+// ── Données initiales (seed avec identifiants stables et déterministes) ────
+const defaultJob = (id, title, category, mode) => ({
+  id,
   title,
   category,
   mode,
   active: true,
-  createdAt: new Date().toISOString(),
+  createdAt: '2026-01-01T00:00:00.000Z',
 });
 
 const defaultJobs = [
-  defaultJob('Développeur web', 'Développement', 'Temps plein'),
-  defaultJob('Développeur mobile', 'Développement', 'Temps plein'),
-  defaultJob('Expert en cybersécurité', 'Sécurité', 'Temps plein'),
-  defaultJob('Designer graphique', 'Design', 'Temps plein'),
-  defaultJob("Technicien d'imprimerie", 'Impression', 'Temps plein'),
-  defaultJob('Formateur informatique', 'Formation', 'Mission'),
+  defaultJob('job-web', 'Développeur web', 'Développement', 'Temps plein'),
+  defaultJob('job-mob', 'Développeur mobile', 'Développement', 'Temps plein'),
+  defaultJob('job-cyb', 'Expert en cybersécurité', 'Sécurité', 'Temps plein'),
+  defaultJob('job-des', 'Designer graphique', 'Design', 'Temps plein'),
+  defaultJob('job-imp', "Technicien d'imprimerie", 'Impression', 'Temps plein'),
+  defaultJob('job-for', 'Formateur informatique', 'Formation', 'Mission'),
 ];
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -188,7 +188,11 @@ export const db = {
 
     const d = await loadFile();
     const list = d[table] || [];
-    const rec = list.find((r) => r.id === id);
+    let rec = list.find((r) => r.id === id);
+    // Recherche de secours par titre si l'identifiant a changé entre temps
+    if (!rec && table === 'jobs') {
+      rec = list.find((r) => r.title === patch.title || (patch.title && r.title?.toLowerCase() === patch.title?.toLowerCase()));
+    }
     if (!rec) return null;
     Object.assign(rec, patch);
     Object.keys(patch).forEach((k) => {
