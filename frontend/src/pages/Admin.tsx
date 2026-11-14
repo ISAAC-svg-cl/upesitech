@@ -60,6 +60,9 @@ export default function Admin() {
       const e = x as Error & { status?: number };
       if (e.status === 401) {
         handleLogout();
+      } else if (e.status === 404) {
+        // Ressource introuvable (ex : devis supprimé entre-temps) : on ignore silencieusement
+        setSelectedQuote(null);
       } else {
         setErr(e.message || 'Une erreur est survenue.');
       }
@@ -76,7 +79,8 @@ export default function Admin() {
         setJobs(j);
         if (me.email) setAdminEmail(me.email);
         // Si un devis est ouvert en modale, le rafraîchir avec les dernières données
-        setSelectedQuote((current) => (current ? q.find((item) => item.id === current.id) || null : null));
+        // S'il n'existe plus (supprimé ou DB réinitialisée), fermer la modale sans erreur
+        setSelectedQuote((current) => (current ? q.find((item) => item.id === current.id) ?? null : null));
       })
       .catch(fail)
       .finally(() => setLoading(false));
