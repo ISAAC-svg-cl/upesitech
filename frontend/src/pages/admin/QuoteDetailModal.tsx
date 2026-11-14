@@ -293,3 +293,4 @@ export default function QuoteDetailModal({ quote, onClose, onUpdated }: Props) {
     </div>
   );
 }
+

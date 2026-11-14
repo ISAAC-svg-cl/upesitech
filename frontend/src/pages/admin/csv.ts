@@ -22,3 +22,4 @@ export function exportToCsv(filename: string, headers: string[], rows: (string |
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+

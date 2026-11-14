@@ -319,3 +319,4 @@ export default function ApplicationsTab({ apps, onReload, onError }: Props) {
     </div>
   );
 }
+

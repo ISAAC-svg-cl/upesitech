@@ -27,7 +27,7 @@ export default function Admin() {
   const [err, setErr] = useState('');
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleLogout = useCallback(() => {
     logout();

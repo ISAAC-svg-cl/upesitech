@@ -132,3 +132,4 @@ export default function AccountTab({ adminEmail, onLogout }: Props) {
     </div>
   );
 }
+

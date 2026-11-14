@@ -431,3 +431,4 @@ export default function QuotesTab({ quotes, onReload, onOpenQuote, onError }: Pr
     </div>
   );
 }
+

@@ -43,7 +43,7 @@ export default function JobEditModal({ job, onClose, onUpdated }: Props) {
         title: title.trim(),
         category: category.trim(),
         mode: mode.trim(),
-        deadline: deadline.trim() || undefined,
+        deadline: deadline.trim() || '',
         active,
       });
       onUpdated();
@@ -158,3 +158,4 @@ export default function JobEditModal({ job, onClose, onUpdated }: Props) {
     </div>
   );
 }
+
