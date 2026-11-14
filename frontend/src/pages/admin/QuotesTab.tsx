@@ -3,6 +3,7 @@ import { api } from '../../api';
 import { SERVICES } from '../../data';
 import type { Quote, Status } from '../../types';
 import { exportToCsv } from './csv';
+import { exportQuotesListPdf } from './pdf';
 
 type Props = {
   quotes: Quote[];
@@ -112,6 +113,14 @@ export default function QuotesTab({ quotes, onReload, onOpenQuote, onError }: Pr
 
     const dateStr = new Date().toISOString().slice(0, 10);
     exportToCsv(`upesitech-devis-${dateStr}`, headers, rows);
+  }
+
+  function handleExportPdf() {
+    let subtitle = 'Tous les devis';
+    if (statusFilter !== 'all') subtitle = `Statut : ${statusFilter}`;
+    if (serviceFilter !== 'all') subtitle += ` · Service : ${serviceName(serviceFilter)}`;
+    if (showArchived) subtitle += ' (Archivés)';
+    exportQuotesListPdf(filteredQuotes, subtitle);
   }
 
   async function handleStatusChange(id: string, s: Status) {
@@ -274,12 +283,22 @@ export default function QuotesTab({ quotes, onReload, onOpenQuote, onError }: Pr
               {filteredQuotes.length} résultat{filteredQuotes.length > 1 ? 's' : ''}
             </span>
             <button
+              className="btn"
+              onClick={handleExportPdf}
+              disabled={filteredQuotes.length === 0}
+              style={{ padding: '6px 14px', fontSize: 12 }}
+              title="Télécharger la liste complète au format PDF"
+            >
+              📄 Exporter en PDF
+            </button>
+            <button
               className="btn ghost"
               onClick={handleExportCsv}
               disabled={filteredQuotes.length === 0}
               style={{ padding: '6px 14px', fontSize: 12 }}
+              title="Exporter au format tableur CSV"
             >
-              📥 Exporter CSV (Excel)
+              📥 CSV
             </button>
           </div>
         </div>

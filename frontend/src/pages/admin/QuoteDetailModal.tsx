@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { api } from '../../api';
 import { SERVICES } from '../../data';
 import type { Quote, Status } from '../../types';
+import { exportSingleQuotePdf } from './pdf';
 
 type Props = {
   quote: Quote | null;
@@ -201,6 +202,14 @@ export default function QuoteDetailModal({ quote, onClose, onUpdated }: Props) {
               💬 Écrire sur WhatsApp
             </a>
           )}
+          <button
+            className="btn ghost"
+            onClick={() => exportSingleQuotePdf(quote)}
+            style={{ fontSize: 13, padding: '8px 16px' }}
+            title="Télécharger cette fiche de devis en PDF"
+          >
+            📄 Télécharger PDF
+          </button>
           <button className="btn ghost" onClick={handleToggleArchive} style={{ fontSize: 13, padding: '8px 16px' }}>
             {quote.archived ? 'Désarchiver' : 'Archiver'}
           </button>
