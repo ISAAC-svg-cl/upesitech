@@ -1,28 +1,59 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../auth';
-import { SERVICES } from '../data';
-import type { Application, Job, Quote, Status } from '../types';
+import type { Application, Job, Quote } from '../types';
+import AccountTab from './admin/AccountTab';
+import ApplicationsTab from './admin/ApplicationsTab';
+import JobsTab from './admin/JobsTab';
+import OverviewTab from './admin/OverviewTab';
+import QuoteDetailModal from './admin/QuoteDetailModal';
+import QuotesTab from './admin/QuotesTab';
 
-const STATUSES: Status[] = ['nouveau', 'en cours', 'traité'];
-const fmt = (d: string) => new Date(d).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+type TabKey = 'overview' | 'quotes' | 'apps' | 'jobs' | 'account';
+
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 export default function Admin() {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState<'quotes' | 'apps' | 'jobs'>('quotes');
+  const [tab, setTab] = useState<TabKey>('overview');
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [apps, setApps] = useState<Application[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [nj, setNj] = useState({ title: '', category: '', mode: 'Temps plein' });
+  const [adminEmail, setAdminEmail] = useState('');
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleLogout = useCallback(() => {
     logout();
     navigate('/connexion', { replace: true });
   }, [logout, navigate]);
+
+  // Déconnexion automatique après 30 minutes d'inactivité
+  const resetInactivityTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      handleLogout();
+    }, INACTIVITY_TIMEOUT_MS);
+  }, [handleLogout]);
+
+  useEffect(() => {
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+    const onUserAction = () => resetInactivityTimer();
+
+    events.forEach((ev) => window.addEventListener(ev, onUserAction, { passive: true }));
+    resetInactivityTimer();
+
+    return () => {
+      events.forEach((ev) => window.removeEventListener(ev, onUserAction));
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [resetInactivityTimer]);
 
   const fail = useCallback(
     (x: unknown) => {
@@ -30,199 +61,164 @@ export default function Admin() {
       if (e.status === 401) {
         handleLogout();
       } else {
-        setErr(e.message);
+        setErr(e.message || 'Une erreur est survenue.');
       }
     },
     [handleLogout],
   );
 
-  const load = useCallback(() => {
-    Promise.all([api.quotes(), api.applications(), api.adminJobs()])
-      .then(([q, a, j]) => {
+  const loadData = useCallback(() => {
+    setErr('');
+    Promise.all([api.quotes(), api.applications(), api.adminJobs(), api.me()])
+      .then(([q, a, j, me]) => {
         setQuotes(q);
         setApps(a);
         setJobs(j);
+        if (me.email) setAdminEmail(me.email);
+        // Si un devis est ouvert en modale, le rafraîchir avec les dernières données
+        setSelectedQuote((current) => (current ? q.find((item) => item.id === current.id) || null : null));
       })
-      .catch(fail);
+      .catch(fail)
+      .finally(() => setLoading(false));
   }, [fail]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    loadData();
+  }, [loadData]);
 
-  const names = (ids: string[]) => ids.map((id) => SERVICES.find((s) => s.id === id)?.name ?? id).join(', ');
-
-  async function addJob(e: FormEvent) {
-    e.preventDefault();
-    setErr('');
-    try {
-      await api.addJob(nj);
-      setNj({ title: '', category: '', mode: 'Temps plein' });
-      load();
-    } catch (x) {
-      fail(x);
-    }
-  }
+  // Nombre de devis non archivés et au statut "nouveau"
+  const newQuotesCount = quotes.filter((q) => !q.archived && q.status === 'nouveau').length;
 
   return (
     <section className="view on">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <h2 style={{ margin: 0 }}>Tableau de bord</h2>
-        <button className="btn ghost" style={{ marginLeft: 'auto' }} onClick={handleLogout}>
-          Se déconnecter
-        </button>
+      {/* En-tête du tableau de bord */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 26, letterSpacing: '-0.02em' }}>Tableau de bord administrateur</h2>
+          {adminEmail && (
+            <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+              Session active : <b>{adminEmail}</b>
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button className="btn ghost" style={{ fontSize: 13, padding: '7px 14px' }} onClick={loadData} title="Rafraîchir les données">
+            🔄 Actualiser
+          </button>
+          <button className="btn ghost" style={{ fontSize: 13, padding: '7px 14px' }} onClick={handleLogout}>
+            Se déconnecter
+          </button>
+        </div>
       </div>
-      <div className="filters">
+
+      {/* Barre d'onglets */}
+      <div className="filters" style={{ marginTop: 18 }}>
+        <button className="chip" aria-pressed={tab === 'overview'} onClick={() => setTab('overview')}>
+          📊 Aperçu
+        </button>
+
         <button className="chip" aria-pressed={tab === 'quotes'} onClick={() => setTab('quotes')}>
-          Devis ({quotes.length})
+          <span>Devis ({quotes.filter((q) => !q.archived).length})</span>
+          {newQuotesCount > 0 && (
+            <span
+              style={{
+                marginLeft: 6,
+                background: '#E02424',
+                color: '#fff',
+                fontSize: 11,
+                fontWeight: 800,
+                padding: '2px 7px',
+                borderRadius: 999,
+                display: 'inline-block',
+                lineHeight: 1,
+              }}
+              title={`${newQuotesCount} nouvelle(s) demande(s) de devis`}
+            >
+              {newQuotesCount}
+            </span>
+          )}
         </button>
+
         <button className="chip" aria-pressed={tab === 'apps'} onClick={() => setTab('apps')}>
-          Candidatures ({apps.length})
+          💼 Candidatures ({apps.length})
         </button>
+
         <button className="chip" aria-pressed={tab === 'jobs'} onClick={() => setTab('jobs')}>
-          Offres ({jobs.length})
+          📢 Offres ({jobs.length})
+        </button>
+
+        <button className="chip" aria-pressed={tab === 'account'} onClick={() => setTab('account')}>
+          ⚙️ Mon compte
         </button>
       </div>
+
+      {/* Bannière d'erreur */}
       {err && (
-        <div className="err" role="alert">
+        <div className="err" role="alert" style={{ marginTop: 14 }}>
           {err}
         </div>
       )}
-      <div className="card tbl-wrap" style={{ marginTop: 18 }}>
-        {tab === 'quotes' && (
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Réf.</th>
-                <th>Date</th>
-                <th>Client</th>
-                <th>Services</th>
-                <th>Projet</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quotes.map((q) => (
-                <tr key={q.id}>
-                  <td>
-                    <span className="tag g">{q.ref}</span>
-                  </td>
-                  <td>{fmt(q.createdAt)}</td>
-                  <td>
-                    <b>{q.name}</b>
-                    <br />
-                    {q.org}
-                    <br />
-                    {q.contact}
-                  </td>
-                  <td>
-                    {names(q.services)}
-                    <br />
-                    <small>{q.deadline}</small>
-                  </td>
-                  <td style={{ maxWidth: 320 }}>{q.message}</td>
-                  <td>
-                    <select
-                      value={q.status}
-                      onChange={(e) => api.setStatus(q.id, e.target.value as Status).then(load).catch(fail)}
-                    >
-                      {STATUSES.map((s) => (
-                        <option key={s}>{s}</option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
-              {!quotes.length && (
-                <tr>
-                  <td colSpan={6}>Aucune demande pour l’instant.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-        {tab === 'apps' && (
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Poste</th>
-                <th>Candidat</th>
-                <th>Contact</th>
-              </tr>
-            </thead>
-            <tbody>
-              {apps.map((a) => (
-                <tr key={a.id}>
-                  <td>{fmt(a.createdAt)}</td>
-                  <td>{a.job}</td>
-                  <td>{a.name}</td>
-                  <td>{a.contact}</td>
-                </tr>
-              ))}
-              {!apps.length && (
-                <tr>
-                  <td colSpan={4}>Aucune candidature pour l’instant.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-        {tab === 'jobs' && (
-          <>
-            <form
-              onSubmit={addJob}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))',
-                gap: 10,
-                alignItems: 'end',
-                marginBottom: 14,
-              }}
-            >
-              <div>
-                <label htmlFor="jt">Poste</label>
-                <input id="jt" value={nj.title} onChange={(e) => setNj({ ...nj, title: e.target.value })} />
-              </div>
-              <div>
-                <label htmlFor="jg">Catégorie</label>
-                <input id="jg" value={nj.category} onChange={(e) => setNj({ ...nj, category: e.target.value })} />
-              </div>
-              <div>
-                <label htmlFor="jm">Contrat</label>
-                <input id="jm" value={nj.mode} onChange={(e) => setNj({ ...nj, mode: e.target.value })} />
-              </div>
-              <button className="btn" type="submit">
-                Publier l’offre
-              </button>
-            </form>
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Poste</th>
-                  <th>Catégorie</th>
-                  <th>Contrat</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((j) => (
-                  <tr key={j.id}>
-                    <td>{j.title}</td>
-                    <td>{j.category}</td>
-                    <td>{j.mode}</td>
-                    <td>
-                      <button className="btn ghost" onClick={() => api.delJob(j.id).then(load).catch(fail)}>
-                        Supprimer
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
-      </div>
+
+      {/* Chargement */}
+      {loading ? (
+        <div className="card" style={{ textAlign: 'center', padding: '40px 20px', marginTop: 18, color: 'var(--muted)' }}>
+          Chargement du tableau de bord…
+        </div>
+      ) : (
+        <>
+          {tab === 'overview' && (
+            <OverviewTab
+              quotes={quotes}
+              apps={apps}
+              jobs={jobs}
+              onSelectTab={(newTab) => setTab(newTab)}
+              onOpenQuote={(q) => setSelectedQuote(q)}
+            />
+          )}
+
+          {tab === 'quotes' && (
+            <QuotesTab
+              quotes={quotes}
+              onReload={loadData}
+              onOpenQuote={(q) => setSelectedQuote(q)}
+              onError={fail}
+            />
+          )}
+
+          {tab === 'apps' && (
+            <ApplicationsTab
+              apps={apps}
+              onReload={loadData}
+              onError={fail}
+            />
+          )}
+
+          {tab === 'jobs' && (
+            <JobsTab
+              jobs={jobs}
+              apps={apps}
+              onReload={loadData}
+              onError={fail}
+            />
+          )}
+
+          {tab === 'account' && (
+            <AccountTab
+              adminEmail={adminEmail}
+              onLogout={handleLogout}
+            />
+          )}
+        </>
+      )}
+
+      {/* Modale de détail d'un devis */}
+      {selectedQuote && (
+        <QuoteDetailModal
+          quote={selectedQuote}
+          onClose={() => setSelectedQuote(null)}
+          onUpdated={loadData}
+        />
+      )}
     </section>
   );
 }
