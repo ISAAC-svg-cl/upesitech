@@ -269,3 +269,4 @@ export function exportSingleQuotePdf(quote: Quote) {
 
   doc.save(`Devis_${quote.ref}_${quote.name.replace(/\s+/g, '_')}.pdf`);
 }
+
