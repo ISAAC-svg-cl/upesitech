@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Banner from '../components/Banner';
-import { SERVICES } from '../data';
+import HeroSlider from '../components/HeroSlider';
 
 const STEPS = [
   ['Analyse', 'Nous cernons vos attentes et vos contraintes.'],
@@ -11,7 +10,6 @@ const STEPS = [
 ];
 
 export default function Home() {
-  const [cur, setCur] = useState(SERVICES[0]);
   return (
     <section className="view on">
       <div className="hero">
@@ -21,14 +19,7 @@ export default function Home() {
           <Link className="btn" to="/devis">Demander un devis</Link>{' '}
           <Link className="btn ghost" to="/services">Voir nos services</Link>
         </div>
-        <div className="stage">
-          <i className="dot d1" /><i className="dot d2" /><i className="dot d3" /><i className="dot d4" />
-          <h3>De quoi avez-vous besoin ?</h3>
-          <div className="pick">
-            {SERVICES.map((s) => <button key={s.id} aria-pressed={s.id === cur.id} onClick={() => setCur(s)}>{s.name}</button>)}
-          </div>
-          <div className="out">{cur.tagline}<small>{cur.desc}</small></div>
-        </div>
+        <HeroSlider />
       </div>
       <div className="strip"><span>Délais respectés</span><span>Données confidentielles</span><span>Solutions fiables et sécurisées</span><span>Service après-vente</span></div>
       <div className="sec">
