@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
+import SocialLinks from './SocialLinks';
 
 const LINKS: [string, string][] = [['/', 'Accueil'], ['/services', 'Services'], ['/devis', 'Devis'], ['/emplois', 'Emplois'], ['/contact', 'Contact']];
 
@@ -40,7 +41,10 @@ export default function Layout() {
             <p>Solutions numériques, sécurité, design et impression en République Démocratique du Congo.</p>
           </div>
           <div className="fl">{LINKS.slice(1).map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}</div>
-          <div className="fs"><span>Instagram @upesitech</span><span>Facebook @upesitech</span><span>LinkedIn @upesitech</span></div>
+          <div className="fs">
+            <span className="fs-title">Suivez-nous</span>
+            <SocialLinks />
+          </div>
         </div>
         <div className="fc">
           <span>© {new Date().getFullYear()} UpesiTech SARL. Tous droits réservés.</span>
