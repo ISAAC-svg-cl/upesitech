@@ -57,6 +57,7 @@ export default function JobEditModal({ job, onClose, onUpdated }: Props) {
 
   return (
     <div
+      className="modal-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -71,7 +72,7 @@ export default function JobEditModal({ job, onClose, onUpdated }: Props) {
       onClick={onClose}
     >
       <div
-        className="card"
+        className="card modal-content"
         style={{ maxWidth: 480, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -1,5 +1,6 @@
 import type { Application, Job, Quote } from '../../types';
 import { SERVICES } from '../../data';
+import AnimatedCount from './AnimatedCount';
 
 type Props = {
   quotes: Quote[];
@@ -39,7 +40,9 @@ export default function OverviewTab({ quotes, apps, jobs, onSelectTab, onOpenQuo
       >
         <div className="card" style={{ padding: '16px 20px' }}>
           <div style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Total devis reçus</div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{activeQuotes.length}</div>
+          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
+            <AnimatedCount value={activeQuotes.length} />
+          </div>
         </div>
         <div
           className="card"
@@ -53,24 +56,32 @@ export default function OverviewTab({ quotes, apps, jobs, onSelectTab, onOpenQuo
             Devis nouveaux
           </div>
           <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4, color: quotesNew > 0 ? '#E02424' : 'inherit' }}>
-            {quotesNew}
+            <AnimatedCount value={quotesNew} />
           </div>
         </div>
         <div className="card" style={{ padding: '16px 20px' }}>
           <div style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Devis en cours</div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4, color: 'var(--blue)' }}>{quotesInProgress}</div>
+          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4, color: 'var(--blue)' }}>
+            <AnimatedCount value={quotesInProgress} />
+          </div>
         </div>
         <div className="card" style={{ padding: '16px 20px' }}>
           <div style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Devis traités</div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4, color: 'var(--green)' }}>{quotesDone}</div>
+          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4, color: 'var(--green)' }}>
+            <AnimatedCount value={quotesDone} />
+          </div>
         </div>
         <div className="card" style={{ padding: '16px 20px' }}>
           <div style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Candidatures</div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{apps.length}</div>
+          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
+            <AnimatedCount value={apps.length} />
+          </div>
         </div>
         <div className="card" style={{ padding: '16px 20px' }}>
           <div style={{ color: 'var(--muted)', fontSize: 13, fontWeight: 600 }}>Offres actives</div>
-          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>{activeJobs}</div>
+          <div style={{ fontSize: 28, fontWeight: 800, marginTop: 4 }}>
+            <AnimatedCount value={activeJobs} />
+          </div>
         </div>
       </div>
 

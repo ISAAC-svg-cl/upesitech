@@ -108,6 +108,7 @@ export default function QuoteDetailModal({ quote, onClose, onUpdated }: Props) {
 
   return (
     <div
+      className="modal-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -123,7 +124,7 @@ export default function QuoteDetailModal({ quote, onClose, onUpdated }: Props) {
       onClick={onClose}
     >
       <div
-        className="card"
+        className="card modal-content"
         style={{
           maxWidth: 640,
           width: '100%',

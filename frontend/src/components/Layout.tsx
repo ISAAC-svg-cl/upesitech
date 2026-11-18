@@ -1,9 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth';
 import SocialLinks from './SocialLinks';
 
-const LINKS: [string, string][] = [['/', 'Accueil'], ['/services', 'Services'], ['/devis', 'Devis'], ['/emplois', 'Emplois'], ['/contact', 'Contact']];
+const LINKS: [string, string][] = [
+  ['/', 'Accueil'],
+  ['/services', 'Services'],
+  ['/devis', 'Devis'],
+  ['/emplois', 'Emplois'],
+  ['/contact', 'Contact'],
+];
 
 export function Logo() {
   return (
@@ -17,30 +23,61 @@ export function Logo() {
 export default function Layout() {
   const { pathname } = useLocation();
   const { isLogged } = useAuth();
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [pathname]);
 
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <>
-      <header>
+      <header className={scrolled ? 'scrolled' : ''}>
         <div className="bar">
-          <Link to="/" className="brand" aria-label="Accueil UpesiTech"><Logo /><span>Upesi<b>Tech</b></span></Link>
+          <Link to="/" className="brand" aria-label="Accueil UpesiTech">
+            <Logo />
+            <span>
+              Upesi<b>Tech</b>
+            </span>
+          </Link>
           <nav aria-label="Navigation principale">
-            {LINKS.map(([to, label]) => <NavLink key={to} to={to} end={to === '/'}>{label}</NavLink>)}
+            {LINKS.map(([to, label]) => (
+              <NavLink key={to} to={to} end={to === '/'}>
+                {label}
+              </NavLink>
+            ))}
           </nav>
-          <Link className="btn hcta" to="/devis">Demander un devis</Link>
+          <Link className="btn hcta" to="/devis">
+            Demander un devis
+          </Link>
         </div>
       </header>
-      <main><Outlet /></main>
+      <main key={pathname} className="page-transition">
+        <Outlet />
+      </main>
       <footer className="foot">
         <div className="fin">
           <div>
-            <div className="fb">Upesi<b>Tech</b> SARL</div>
+            <div className="fb">
+              Upesi<b>Tech</b> SARL
+            </div>
             <p>Solutions numériques, sécurité, design et impression en République Démocratique du Congo.</p>
           </div>
-          <div className="fl">{LINKS.slice(1).map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}</div>
+          <div className="fl">
+            {LINKS.slice(1).map(([to, label]) => (
+              <Link key={to} to={to}>
+                {label}
+              </Link>
+            ))}
+          </div>
           <div className="fs">
             <span className="fs-title">Suivez-nous</span>
             <SocialLinks />
